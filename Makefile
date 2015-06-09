@@ -1,5 +1,3 @@
-# Configuration variables.
-
 # Microcontroller options.
 DF_CPU ?= 16000000UL
 MMCU   ?= atmega328p
@@ -12,28 +10,36 @@ PORT ?= /dev/$(shell ls /dev/ | grep "tty\.usb" | sed -n 1p)
 # 57600  - Arduino Mini Pro
 BAUD ?= 115200
 
-# The language we're building from (C or Assembly), default is C.
-LANGUAGE ?= c
+# The location for our library archives and headers.
+PREFIX ?= /usr/local/avr
 
-# Libraries, defaults to all.
-C_LIBS = $(wildcard lib/*.c)
-LIBS ?= $(C_LIBS:.c=)
+# The name of this library.
+LIBRARY = max7221
 
 ################################
 
 # Probably shouldn't touch these.
 
+# Source files.
+SRCS = $(wildcard lib/*.c)
+
+# Test files.
+TESTS = $(wildcard test/*.c)
+
 # The `gcc` executable.
 CC = avr-gcc
-C_FLAGS = -Wall -Werror -pedantic -Os -std=c99
-C_HEADERS = -I.
-
-# The `as` executable.
-AS = avr-as
+CFLAGS = -Wall -Werror -pedantic -Os -std=c99 \
+         -DF_CPU=$(DF_CPU) -mmcu=$(MMCU) \
+         -I$(PREFIX)/include
+LDFLAGS = -L$(PREFIX)/lib
+LDLIBS = -lavr -l$(LIBRARY)
 
 # The `obj-copy` executable.
 OBJ_COPY = avr-objcopy
 OBJ_COPY_FLAGS = -O ihex -R .eeprom
+
+# The `ar` archiver executable.
+AR = avr-ar
 
 # The `avrdude` executable.
 AVRDUDE = avrdude
@@ -43,90 +49,63 @@ AVRDUDE_FLAGS = -F -V -c arduino -p ATMEGA328P
 AVRSIZE = avr-size
 AVRSIZE_FLAGS = -C
 
-# List of projects. TODO: ASM projects.
-PROJECTS = $(wildcard projects/*.c)
-
-# List of tests.
-TESTS = $(wildcard test/**/*.c)
-
-################################
-
-# The default task is to build all projects.
-default: all
-
 ################################
 
 # Pseudo rules.
 
 # These rules are not file based.
-.PHONY: flash serial size clean
+.PHONY: install uninstall test size clean flash serial
 
-# Mark the hex file as intermediate.
-.INTERMEDIATE: $(TARGET).hex $(TARGET).bin
+# Mark all .o files as intermediate.
+.INTERMEDIATE: $(SRCS:.c=.o) $(TARGET).hex
 
 ################################
 
 # Utility rules (not file based).
 
-# Build all the projects.
-#
-# TODO: Build asm too!
-#
-all: $(PROJECTS:.c=.bin)
+# The default task is to build the library.
+default: all
 
-test: $(TESTS:.c=.hex)
-	@echo "foo"
+# Build the library.
+all: lib$(LIBRARY).a($(SRCS:.c=.o))
 
-# flash
-#
+# Show information about target's size.
+size: lib$(LIBRARY).a($(SRCS:.c=.o))
+	echo $*
+	# $(AVRSIZE) $(AVRSIZE_FLAGS) --mcu=$(MMCU) $%
+
+# Remove non-source files.
+clean:
+	find . -name '*.a' -or -name '*.o' -or -name '*.hex' | xargs rm
+
+# Install this library into PREFIX on this system.
+install: all
+	mkdir -p $(PREFIX)/lib $(PREFIX)/include
+	install lib$(LIBRARY).a $(PREFIX)/lib
+	install lib/$(LIBRARY).h $(PREFIX)/include
+
+# Remove this library from PREFIX on this system.
+uninstall:
+	rm $(PREFIX)/lib/lib$(LIBRARY).a $(PREFIX)/include/$(LIBRARY).h
+
+# Test this library (must be installed).
+test: $(TESTS:.c=)
+	rm $?
+
 # Given a hex file using `avrdude` this target flashes the AVR with the
 # new program contained in the hex file.
 flash: $(TARGET).hex
 	$(AVRDUDE) $(AVRDUDE_FLAGS) -P $(PORT) -b $(BAUD) -U flash:w:$<
 
-# serial
-#
 # Open up a screen session for communication with the AVR
 # through it's on-board UART.
 serial:
 	screen $(PORT) $(BAUD)
 
-# size
-#
-# Show information about target's size.
-size: $(TARGET).bin
-	$(AVRSIZE) $(AVRSIZE_FLAGS) --mcu=$(MMCU) $<
-
-# Remove non-source files.
-clean:
-	rm -rf $(wildcard **/*.o) $(wildcard **/*.bin) $(wildcard **/*.hex) $(wildcard test/**/*.hex)
-
 ################################
 
 # File rules.
 
-# .bin <- .o
-ifeq ($(LANGUAGE), c)
-%.bin: %.o $(LIBS:=.o)
-	$(CC) $(C_FLAGS) -mmcu=$(MMCU) $? -o $@
-else
-%.bin: %.o
-	$(CC) -mmcu=$(MMCU) $? -o $@
-endif
-
-# .asm <- .c
-%.asm: %.c
-	$(CC) -S $(C_HEADERS) $(C_FLAGS) -DF_CPU=$(DF_CPU) -mmcu=$(MMCU) -c $< -o $@
-
-# .o <- (.c | .asm)
-ifeq ($(LANGUAGE), c)
-%.o: %.c
-	$(CC) $(C_HEADERS) $(C_FLAGS) -DF_CPU=$(DF_CPU) -mmcu=$(MMCU) -c $< -o $@
-else
-%.o: %.asm
-	$(AS) -mmcu=$(MMCU) -o $@ $<
-endif
-
-# .hex <- .bin
-%.hex: %.bin
+# *.hex <- *
+%.hex: %
 	$(OBJ_COPY) $(OBJ_COPY_FLAGS) $< $@
