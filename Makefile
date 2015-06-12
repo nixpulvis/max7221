@@ -5,10 +5,13 @@ MMCU   ?= atmega328p
 # Port to flash to.
 PORT ?= /dev/$(shell ls /dev/ | grep "tty\.usb" | sed -n 1p)
 
-# UART baud rate.
+# Flashing baud rate.
 # 115200 - Arduino Uno
 # 57600  - Arduino Mini Pro
-BAUD ?= 115200
+AVRDUDE_BAUD ?= 115200
+
+# UART baud default baud rate.
+BAUD ?= 9600
 
 # The location for our library archives and headers.
 PREFIX ?= /usr/local/avr
@@ -57,7 +60,7 @@ AVRSIZE_FLAGS = -C
 .PHONY: install uninstall test size clean flash serial
 
 # Mark all .o files as intermediate.
-.INTERMEDIATE: $(SRCS:.c=.o) $(TARGET).hex
+.INTERMEDIATE: $(SRCS:.c=.o) $(TARGET).hex $(TARGET)
 
 ################################
 
@@ -95,7 +98,7 @@ test: $(TESTS:.c=)
 # Given a hex file using `avrdude` this target flashes the AVR with the
 # new program contained in the hex file.
 flash: $(TARGET).hex
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -P $(PORT) -b $(BAUD) -U flash:w:$<
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -P $(PORT) -b $(AVRDUDE_BAUD) -U flash:w:$<
 
 # Open up a screen session for communication with the AVR
 # through it's on-board UART.
