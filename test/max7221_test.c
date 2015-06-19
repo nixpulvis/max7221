@@ -1,4 +1,4 @@
-#include <avr.h>
+#include <avr/uart.h>
 #include <max7221.h>
 
 // Forward declarations.

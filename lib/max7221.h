@@ -38,8 +38,7 @@
 #include <string.h>
 #include <avr/io.h>
 #include <util/delay.h>
-
-#include "avr.h"
+#include <avr/spi.h>
 
 // MAX7221_init
 // Setup the MAX7221, setting some sane defaults if passed
