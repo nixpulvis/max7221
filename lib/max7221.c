@@ -3,27 +3,31 @@
 //
 // MAX7221_init implementation.
 //
-void MAX7221_init(byte options)
+int MAX7221_init(byte options)
 {
+  int ret = 0;
   // Setup SPI communication for the MAX7221.
-  spi_init();
-
-  if (options == MAX7221_INIT_SANE)
+  spi_init(SPI_MASTER);
+  if (options == MAX7221_INIT_BCD || options == MAX7221_INIT_RAW)
   {
-    MAX7221_set_scan_limit(7);
-    MAX7221_set_intensity(0x0F);
-    MAX7221_set_power(TRUE);
-    MAX7221_clear();
+    // Turn on the first 4 digits.
+    ret |= MAX7221_set_scan_limit(4);
+    // Set to full intensity.
+    ret |= MAX7221_set_intensity(0xF);
+    // Turn on the display.
+    ret |= MAX7221_set_power(TRUE);
+    // Clear the display.
+    ret |= MAX7221_clear();
+    // Use BCD decoding if asked.
+    if (options == MAX7221_INIT_BCD)
+      ret |= MAX7221_set_decode_mode(0xF);
   }
+  return ret;
 }
 
 
-// Configuration Functions
-//////////////////////////
-
-
 //
-// MAX7221_set_decode_mode
+// MAX7221_set_decode_mode implementation.
 //
 int MAX7221_set_decode_mode(byte value)
 {
@@ -33,7 +37,7 @@ int MAX7221_set_decode_mode(byte value)
 
 
 //
-// MAX7221_set_intensity
+// MAX7221_set_intensity implementation.
 //
 int MAX7221_set_intensity(byte value)
 {
@@ -43,7 +47,7 @@ int MAX7221_set_intensity(byte value)
 
 
 //
-// MAX7221_set_scan_limit
+// MAX7221_set_scan_limit implementation.
 //
 int MAX7221_set_scan_limit(byte value)
 {
@@ -53,7 +57,7 @@ int MAX7221_set_scan_limit(byte value)
 
 
 //
-// MAX7221_set_power
+// MAX7221_set_power implementation.
 //
 int MAX7221_set_power(bool value)
 {
@@ -63,17 +67,13 @@ int MAX7221_set_power(bool value)
 
 
 //
-// MAX7221_set_display_test
+// MAX7221_set_display_test implementation.
 //
 int MAX7221_set_display_test(bool value)
 {
   MAX7221_set_register(MAX7221_REGISTER_DISPLAY_TEST, value ? 0xFF : 0x00);
   return 0;
 }
-
-
-// Display Functions
-////////////////////
 
 
 //
@@ -125,35 +125,44 @@ int MAX7221_display_byte(byte row, byte value)
 //
 int MAX7221_display_bcd_digit(byte digit, byte value)
 {
+  // Check the digit range.
   if (0 > digit || digit > 7)
     return -1;
-
-  // TODO: I'm pretty sure this logic is correct, but I'm on
-  // an airplane and who knows what my brain is doing.
-  if ((0 > value || value > 9) &&
-      (value != MAX7221_BCD_MINUS ||
-       value != MAX7221_BCD_E ||
-       value != MAX7221_BCD_H ||
-       value != MAX7221_BCD_L ||
-       value != MAX7221_BCD_P ||
-       value != MAX7221_BCD_BLANK))
+  // Check the value range.
+  if (0 > value || value > 0x0F)
     return -1;
-
   // Display the value.
   MAX7221_set_register(digit + 1, value);
-
   return 0;
 }
 
+//
+// MAX7221_display_bcd_int implementation.
+//
+int MAX7221_display_bcd_int(int32_t value, byte segments)
+{
+  bool negative = value < 0;
+  int32_t val = abs(value);
+  for (byte i = 0; i < segments; i++)
+  {
+    MAX7221_display_bcd_digit(segments - 1 - i, val % 10);
+    val /= 10;
+  }
+  if (negative)
+    MAX7221_display_bcd_digit(0, MAX7221_BCD_MINUS);
+  return 0;
+}
 
-// TODO: Write MAX7221_display_bcd_int.
+//
+// MAX7221_display_bcd_float implementation.
+//
 // TODO: Write MAX7221_display_bcd_float.
 
 
 //
 // MAX7221_clear implementation.
 //
-void MAX7221_clear(void)
+int MAX7221_clear(void)
 {
   MAX7221_set_register(0x01, 0x00);
   MAX7221_set_register(0x02, 0x00);
@@ -163,20 +172,18 @@ void MAX7221_clear(void)
   MAX7221_set_register(0x06, 0x00);
   MAX7221_set_register(0x07, 0x00);
   MAX7221_set_register(0x08, 0x00);
+  return 0;
 }
-
-
-// Helper Functions
-///////////////////
 
 
 //
 // MAX7221_set_register implementation.
 //
-void MAX7221_set_register(byte address, byte value)
+int MAX7221_set_register(byte address, byte value)
 {
   spi_start();
   spi_transfer(address & 0xF);
   spi_transfer(value);
   spi_end();
+  return 0;
 }
