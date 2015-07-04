@@ -31,8 +31,7 @@ int MAX7221_init(byte options)
 //
 int MAX7221_set_decode_mode(byte value)
 {
-  MAX7221_set_register(MAX7221_REGISTER_DECODE_MODE, value);
-  return 0;
+  return MAX7221_set_register(MAX7221_REGISTER_DECODE_MODE, value);
 }
 
 
@@ -41,8 +40,7 @@ int MAX7221_set_decode_mode(byte value)
 //
 int MAX7221_set_intensity(byte value)
 {
-  MAX7221_set_register(MAX7221_REGISTER_INTENSITY, value);
-  return 0;
+  return MAX7221_set_register(MAX7221_REGISTER_INTENSITY, value);
 }
 
 
@@ -51,8 +49,7 @@ int MAX7221_set_intensity(byte value)
 //
 int MAX7221_set_scan_limit(byte value)
 {
-  MAX7221_set_register(MAX7221_REGISTER_SCAN_LIMIT, value);
-  return 0;
+  return MAX7221_set_register(MAX7221_REGISTER_SCAN_LIMIT, value);
 }
 
 
@@ -61,8 +58,7 @@ int MAX7221_set_scan_limit(byte value)
 //
 int MAX7221_set_power(bool value)
 {
-  MAX7221_set_register(MAX7221_REGISTER_SHUTDOWN, value ? 0xFF : 0x00);
-  return 0;
+  return MAX7221_set_register(MAX7221_REGISTER_SHUTDOWN, value ? 0xFF : 0x00);
 }
 
 
@@ -71,8 +67,7 @@ int MAX7221_set_power(bool value)
 //
 int MAX7221_set_display_test(bool value)
 {
-  MAX7221_set_register(MAX7221_REGISTER_DISPLAY_TEST, value ? 0xFF : 0x00);
-  return 0;
+  return MAX7221_set_register(MAX7221_REGISTER_DISPLAY_TEST, value ? 0xFF : 0x00);
 }
 
 
@@ -84,7 +79,6 @@ int MAX7221_display_matrix(bool matrix[MAX7221_SIZE][MAX7221_SIZE])
   int ret = 0;
   for (byte y = 0; y < MAX7221_SIZE; y++)
     ret |= MAX7221_display_vector(y, matrix[y]);
-
   return ret;
 }
 
@@ -99,7 +93,6 @@ int MAX7221_display_vector(byte row, bool vector[MAX7221_SIZE])
   byte data = 0;
   for (byte x = 0; x < MAX7221_SIZE; x++)
     data |= (vector[x] << x);
-
   // Display the byte.
   return MAX7221_display_byte(row, data);
 }
@@ -112,11 +105,8 @@ int MAX7221_display_byte(byte row, byte value)
 {
   if (0 > row || row > 7)
     return -1;
-
   // Display the value.
-  MAX7221_set_register(row + 1, value);
-
-  return 0;
+  return MAX7221_set_register(row + 1, value);
 }
 
 
@@ -132,8 +122,7 @@ int MAX7221_display_bcd_digit(byte digit, byte value)
   if (0 > value || value > 0x0F)
     return -1;
   // Display the value.
-  MAX7221_set_register(digit + 1, value);
-  return 0;
+  return MAX7221_set_register(digit + 1, value);
 }
 
 //
@@ -164,15 +153,16 @@ int MAX7221_display_bcd_int(int32_t value, byte segments)
 //
 int MAX7221_clear(void)
 {
-  MAX7221_set_register(0x01, 0x00);
-  MAX7221_set_register(0x02, 0x00);
-  MAX7221_set_register(0x03, 0x00);
-  MAX7221_set_register(0x04, 0x00);
-  MAX7221_set_register(0x05, 0x00);
-  MAX7221_set_register(0x06, 0x00);
-  MAX7221_set_register(0x07, 0x00);
-  MAX7221_set_register(0x08, 0x00);
-  return 0;
+  int ret = 0;
+  ret |= MAX7221_set_register(0x01, 0x00);
+  ret |= MAX7221_set_register(0x02, 0x00);
+  ret |= MAX7221_set_register(0x03, 0x00);
+  ret |= MAX7221_set_register(0x04, 0x00);
+  ret |= MAX7221_set_register(0x05, 0x00);
+  ret |= MAX7221_set_register(0x06, 0x00);
+  ret |= MAX7221_set_register(0x07, 0x00);
+  ret |= MAX7221_set_register(0x08, 0x00);
+  return ret;
 }
 
 
