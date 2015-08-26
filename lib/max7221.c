@@ -145,7 +145,18 @@ int max7221_display_bcd_int(int32_t value, byte segments)
 //
 // max7221_display_bcd_float implementation.
 //
-// TODO: Write max7221_display_bcd_float.
+int max7221_display_bcd_float(float value,
+                              byte decimals,
+                              byte segments,
+                              byte round)
+{
+  double integral;
+  double fractional = modf(value, &integral);
+  printf("%f\n", fractional);
+  max7221_display_bcd_int((int32_t) 1, decimals);
+  max7221_display_bcd_int((int32_t) integral, segments - decimals);
+  return 0;
+}
 
 
 //

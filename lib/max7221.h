@@ -218,7 +218,9 @@ int max7221_display_bcd_int(int32_t value, byte segments);
 // round - The floating point rounding strategy.
 //
 // Returns 0 if successful, -1 if rounded and you "care", -2 otherwise.
-int max7221_display_bcd_float(float value, byte decimals, byte segments,
+int max7221_display_bcd_float(float value,
+                              byte decimals,
+                              byte segments,
                               byte round);
 
 // max7221_clear

@@ -5,7 +5,7 @@ int main(void)
   // Initialize the max7221.
   max7221_init(MAX7221_INIT_BCD);
 
-  // // Test setting the digits.
+  // Test setting the digits.
   max7221_display_bcd_digit(0, 1);
   max7221_display_bcd_digit(1, 2);
   max7221_display_bcd_digit(2, 3);
@@ -30,7 +30,8 @@ int main(void)
   delay_ms(1000);
 
   // Test setting a float.
-  // int max7221_display_bcd_float(float value, byte decimals, byte segments,
+  max7221_display_bcd_float(123.4, 1, 4, 0);
+  delay_ms(1000);
 
   // Test setting the power.
   max7221_set_power(TRUE);
