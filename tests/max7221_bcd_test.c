@@ -1,3 +1,4 @@
+#include <avrm/delay.h>
 #include <max7221.h>
 
 int main(void)
